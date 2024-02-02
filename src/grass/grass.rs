@@ -1,4 +1,4 @@
-use bevy::{prelude::*, render::{view::NoFrustumCulling, mesh::VertexAttributeValues, extract_component::ExtractComponent, render_resource::{Extent3d, TextureDimension, TextureFormat}}, utils::HashMap, ecs::query::QueryItem};
+use bevy::{ecs::query::QueryItem, prelude::*, render::{view::NoFrustumCulling, mesh::VertexAttributeValues, extract_component::ExtractComponent, render_resource::{Extent3d, TextureDimension, TextureFormat}}, utils::HashMap};
 #[cfg(feature = "bevy-inspector-egui")]
 use bevy_inspector_egui::{prelude::ReflectInspectorOptions, InspectorOptions};
 
@@ -33,6 +33,30 @@ pub fn generate_grass(
         chunks.chunks = grass.generate_grass(transform, mesh, chunks.chunk_size, &asset_server);
         let duration = start.elapsed();
         println!("GRASS GENERATION TIME: {:?}", duration);
+    }
+}
+
+/// This component points to a GrassBundle Entity,
+///  which should be updated when this entity changes its mesh or transform.
+#[derive(Component)]
+pub struct DynamicGrassUpdater{
+    pub grass_to_update: Entity
+}
+
+pub fn update_grass (
+    mut query: Query<(&Grass, &mut GrassChunks)>,
+    mesh_entity_query: Query<(&Transform, &Handle<Mesh>, &DynamicGrassUpdater), Or<(Changed<Transform>, Changed<Handle<Mesh>>)>>,
+    meshes: Res<Assets<Mesh>>,
+    asset_server: Res<AssetServer>
+) {
+    for (transform, mesh_handle, grass_updater) in mesh_entity_query.iter() {
+        if let Ok((grass, mut chunks)) = query.get_mut(grass_updater.grass_to_update) {
+            let mesh = meshes.get(mesh_handle).unwrap();
+            let start = std::time::Instant::now();
+            chunks.chunks = grass.generate_grass(transform, mesh, chunks.chunk_size, &asset_server);
+            let duration = start.elapsed();
+            println!("GRASS UPDATE TIME: {:?}", duration);
+        }
     }
 }
 

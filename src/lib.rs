@@ -53,6 +53,7 @@ impl Plugin for ProceduralGrassPlugin {
             .insert_resource(GrassTimer::default())
             .add_systems(Startup, grass::wind::create_wind_map)
             .add_systems(PostStartup, grass::grass::generate_grass)
+            .add_systems(Last, grass::grass::update_grass)
             .add_systems(Update, (grass::chunk::grass_culling, grass::displacement::grass_displacement))
             .init_asset::<GrassChunkData>()
             .add_plugins(RenderAssetPlugin::<GrassChunkData>::default())
